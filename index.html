@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clan Search</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+        }
+        
+        .search-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        #searchInput {
+            flex-grow: 1;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        
+        #searchInput::placeholder {
+            color: #bbbbbb;
+        }
+        
+        #searchInput:focus {
+            border-color: #0056b3;
+        }
+        
+        .radio-container {
+            display: flex;
+            align-items: center;
+            margin: 0 20px;
+        }
+        
+        .radio-container label {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+        
+        .radio-container input[type="radio"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #007bff;
+            border-radius: 50%;
+            outline: none;
+            margin-right: 5px;
+        }
+        
+        .radio-container input[type="radio"]:checked {
+            background-color: #007bff;
+            box-shadow: inset 0 0 0 4px #121212;
+        }
+        
+        #searchButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        #searchButton:hover {
+            background-color: #0056b3;
+        }
+        
+        #searchButton:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+        
+        #clans {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 0;
+            list-style-type: none;
+        }
+        
+        .clan-item {
+            background-color: #1e1e1e;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            word-wrap: break-word;
+        }
+        
+        .clan-item h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .clan-item a {
+            color: #4da6ff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .clan-item a:hover {
+            color: #80cfff;
+            text-decoration: underline;
+        }
+        
+        .clan-item p {
+            margin: 5px 0;
+        }
+        
+        .clan-item strong {
+            font-weight: bold;
+        }
+
+        #pagination {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .page-button {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            border-radius: 5px;
+        }
+
+        .page-button:hover {
+            background-color: #333333;
+        }
+
+        .page-button.current {
+            background-color: #007bff;
+            font-weight: bold;
+        }
+
+        #resultsCount {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Search Clans</h1>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Enter search text">
+        <div class="radio-container">
+            <label><input type="radio" name="searchField" value="about" checked> About</label>
+            <label><input type="radio" name="searchField" value="name"> Name</label>
+            <label><input type="radio" name="searchField" value="motto"> Motto</label>
+        </div>
+        <button id="searchButton" disabled>Search</button>
+    </div>
+    <div id="resultsCount"></div>
+    <div id="loadingIndicator" style="display: none;">Loading clans, please wait...</div>
+    <ul id="clans"></ul>
+    <div id="pagination"></div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const searchFieldRadios = document.getElementsByName('searchField');
+        const paginationDiv = document.getElementById('pagination');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const resultsCountDiv = document.getElementById('resultsCount');
+
+        let currentPage = 1;
+        let totalItems = 0;
+
+        searchInput.addEventListener('input', () => {
+            searchButton.disabled = searchInput.value.trim() === '';
+        });
+
+        searchButton.addEventListener('click', () => {
+            currentPage = 1; // Reset to first page on new search
+            fetchAndDisplayClans();
+        });
+
+        searchInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter' && searchInput.value.trim() !== '') {
+                event.preventDefault(); // Prevent form submission if within a form
+                currentPage = 1; // Reset to first page on new search
+                fetchAndDisplayClans();
+            }
+        });
+
+        const fetchAndDisplayClans = async () => {
+            const searchTerm = searchInput.value;
+            const selectedField = [...searchFieldRadios].find(radio => radio.checked).value;
+
+            const queryParams = new URLSearchParams({
+                search: searchTerm,
+                field: selectedField,
+                page: currentPage
+            });
+
+            loadingIndicator.style.display = 'block';
+            resultsCountDiv.innerHTML = '';
+            const clansList = document.getElementById('clans');
+            clansList.innerHTML = '';  // Clear previous results
+
+            let response = await fetch(`/.netlify/functions/get_clans?${queryParams}`);
+            let data = await response.json();
+
+            loadingIndicator.style.display = 'none';
+
+            if (data.error) {
+                clansList.innerText = `Error: ${data.error}`;
+                return;
+            }
+
+            totalItems = data.totalItems || 0;
+            resultsCountDiv.innerHTML = `Total Results: ${totalItems}`;
+
+            if (data.results.length === 0) {
+                clansList.innerText = "0 Clans found";
+            } else {
+                data.results.forEach(result => {
+                    const listItem = document.createElement("li");
+                    listItem.className = "clan-item";
+
+                    const clanNameContainer = document.createElement("h3");
+                    const clanName = document.createTextNode(result.name);
+                    clanNameContainer.appendChild(clanName);
+
+                    const clanLink = document.createElement("a");
+                    clanLink.href = `https://www.bungie.net/7/en/Clan/Profile/${result.groupId}`;
+                    clanLink.target = "_blank";
+                    clanLink.innerText = `View on Bungie.net`;
+                    clanNameContainer.appendChild(clanLink);
+
+                    listItem.appendChild(clanNameContainer);
+
+                    const clanMotto = document.createElement("p");
+                    clanMotto.innerHTML = `<strong>Motto:</strong> ${result.motto}`;
+                    listItem.appendChild(clanMotto);
+
+                    const clanAbout = document.createElement("p");
+                    clanAbout.innerHTML = `<strong>About:</strong> ${result.about}`;
+                    listItem.appendChild(clanAbout);                    
+
+                    clansList.appendChild(listItem);
+                });
+            }
+
+            updatePagination(data.totalPages);
+        };
+
+        const updatePagination = (totalPages) => {
+            paginationDiv.innerHTML = '';
+
+            if (totalPages > 1) {
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageButton = document.createElement('button');
+                    pageButton.className = 'page-button';
+                    if (i === currentPage) {
+                        pageButton.classList.add('current');
+                    }
+                    pageButton.innerText = i;
+                    pageButton.addEventListener('click', () => {
+                        currentPage = i;
+                        fetchAndDisplayClans();
+                    });
+                    paginationDiv.appendChild(pageButton);
+                }
+            }
+        };
+    </script>
+</body>
+</html>
