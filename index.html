@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -184,7 +184,7 @@
             <label><input type="radio" name="searchField" value="name"> Name</label>
             <label><input type="radio" name="searchField" value="motto"> Motto</label>
         </div>
-        <button id="searchButton" disabled>Search</button>
+        <button id="searchButton">Search</button>
     </div>
     <div id="resultsCount"></div>
     <div id="loadingIndicator" style="display: none;">Loading clans, please wait...</div>
@@ -201,10 +201,6 @@
 
         let currentPage = 1;
         let totalItems = 0;
-
-        searchInput.addEventListener('input', () => {
-            searchButton.disabled = searchInput.value.trim() === '';
-        });
 
         searchButton.addEventListener('click', () => {
             currentPage = 1; // Reset to first page on new search
@@ -272,7 +268,7 @@
 
                     const clanAbout = document.createElement("p");
                     clanAbout.innerHTML = `<strong>About:</strong> ${result.about}`;
-                    listItem.appendChild(clanAbout);                    
+                    listItem.appendChild(clanAbout);
 
                     clansList.appendChild(listItem);
                 });
@@ -300,6 +296,8 @@
                 }
             }
         };
+
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayClans);
     </script>
 </body>
 </html>
